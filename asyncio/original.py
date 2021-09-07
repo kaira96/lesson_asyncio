@@ -1,48 +1,81 @@
-from time import time
+
+# Dabid Beazley
+# 2015 PyCon
+# Concurrency from the Ground up Live
+
+import socket
+from select import select
+
+tasks = []
+
+to_read = {}
+to_write = {}
 
 
-# python3 -i original.py
-# gen
-# g
-# next(g)
-# next('ol')
+def server():
+    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_socket.bind(('localhost', 5001))
+    server_socket.listen()
 
-
-def gen_filename():
     while True:
-        pattern = 'file-{}.jpeg'
-        t = int(time() * 1000)
 
-        yield pattern.format(str(t))
+        yield ('read', server_socket)
+        client_socket, addr = server_socket.accept()  # read
 
-        sum = 234 + 234
-        print(sum)
+        print('Connection from', addr)
 
-
-# g = gen_filename()
+        tasks.append(client(client_socket))
 
 
-def gen1(s):
-    for i in s:
-        yield i
+def client(client_socket):
+    while True:
+
+        yield ('read', client_socket)
+        request = client_socket.recv(4096)  # read
+
+        if not request:
+            break
+        else:
+            response = 'Hello world\n'.encode()
+
+            yield ('write', client_socket)
+            client_socket.send(response)    # write
+
+    client_socket.close()
+
+
+def event_loop():
+
+    while any([tasks, to_read, to_write]):
+
+        while not tasks:
+            ready_to_read, ready_to_write, _ = select(to_read, to_write, [])
+
+            for sock in ready_to_read:
+                tasks.append(to_read.pop(sock))
+
+            for sock in ready_to_write:
+                tasks.append(to_write.pop(sock))
+
+        try:
+            task = tasks.pop(0)
+
+            reason, sock = next(task)  # ('write', client_socket)
+
+            if reason == 'read':
+                to_read[sock] = task
+            if reason == 'write':
+                to_write[sock] = task
+
+        except StopIteration:
+            print('Done!')
 
 
 
-def gen2(n):
-    for i in range(n):
-        yield i
+tasks.append(server())
+event_loop()
 
-g1 = gen1('oleg')
-g2 = gen2(4)
 
-tasks = [g1, g2]
-
-while tasks:
-    task = tasks.pop(0)
-
-    try:
-        i = next(task)
-        print(i)
-        tasks.append(task)
-    except StopIteration:
-        pass
+# python3 original.py
+# nc localhost 5001
