@@ -1,21 +1,12 @@
 # python3 -i  original.py
-# g = average()
-# g.send(None)
-# g.send(5)
-# g.send(2)
-# g.throw(StopIteration)
+# sg = subgen()
+# g = delegator(sg)
+# g.send('OK')
+# g.send(123)
 # g.throw(BlaBlaException)
 
 
-# from inspect import getgeneratorstate
-# g = average()
-# getgenerationstate(g)
-# g.send(5)
-# g.send(6)
-# try:
-#	g.throw(StopIteration)
-# except StopIteration as e:
-#	print('Average', e.value)
+
 
 def coroutine(func):
     def inner(*args, **kwargs):
@@ -25,34 +16,31 @@ def coroutine(func):
     return inner
 
 
-def subgen():
-    x = 'Ready to accept message'
-    message = yield x
-    print('Subgen received:', message)
-
-
 class BlaBlaException(Exception):
     pass
 
 
-@coroutine
-def average():
-    count = 0
-    summ = 0
-    average = None
 
+def subgen():
     while True:
         try:
-            x = yield average
+            message = yield
         except StopIteration:
-            print('Done')
-            break
-        except BlaBlaException:
-            print('................................')
+            # print('Ku-ku!!!')
             break
         else:
-            count += 1
-            summ += x
-            average = round(summ / count, 2)
+            print('........', message)
 
-    return average
+    return 'Returned from subgen()'
+
+
+@coroutine
+def delegator(g):
+    # while True:
+    #     try:
+    #         data = yield
+    #         g.send(data)
+    #     except BlaBlaException as e:
+    #         g.throw(e)
+    result = yield from g
+    print(result)
