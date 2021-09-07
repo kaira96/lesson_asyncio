@@ -1,68 +1,67 @@
-# pip (pip3) install aiohttp
-
-
-# План:
-# 1. Asyncio фреймворк для создания событийных циклов
-# 2. Пример простой асинхронной программы времён Python 3.4
-# 3. Синтаксис Async/await на замену @asyncio.coroutine и yield from
-# 4. Пример асинхронного скачивания файлов
-
-
-# Event Loop:
-#     coroutine > Task (Future)
-
-import asyncio
+import requests
 from time import time
 
 
-async def print_nums():
-    num = 1
-    while True:
-        print(num)
-        num += 1
-        await asyncio.sleep(0.1)
 
 
-async def print_time():
-    count = 0
-    while True:
-        if count % 3 == 0:
-            print("{} seconds have passed".format(count))
-        count += 1
-        await asyncio.sleep(1)
+def get_file(url):
+    r = requests.get(url, allow_redirects=True)
+    return r
 
 
-async def main():
-    task1 = asyncio.create_task(print_nums())
-    task2 = asyncio.create_task(print_time())
+def write_file(response):
+    # https://loremflickr.com/cache/resized/4680_27365032749_db058d0c26_320_240_nofilter.jpg
+    filename = response.url.split('/')[-1]
+    with open(filename, 'wb') as file:
+        file.write(response.content)
 
-    await asyncio.gather(task1, task2)
+def main():
+    t0 = time()
+
+    url = 'https://loremflickr.com/320/240'
+
+    for i in range(10):
+        write_file(get_file(url))
+
+    print(time() - t0)
+
+
+
+# if __name__ == '__main__':
+#     main()
+
+
+#######################################
+
+import asyncio
+import aiohttp # pip install aiohttp
+
+
+def write_image(data):
+    filename = 'file-{}.jpeg'.format(int(time() * 1000))
+    with open(filename, 'wb') as file:
+        file.write(data)
+
+
+async def fetch_content(url, session):
+    async with session.get(url, allow_redirects=True) as response:
+        data = await response.read()
+        write_image(data)
+
+
+async def main2():
+    url = 'https://loremflickr.com/320/240'
+    tasks = []
+
+    async with aiohttp.ClientSession() as session:
+        for i in range(10):
+            task = asyncio.create_task(fetch_content(url, session))
+            tasks.append(task)
+
+        await asyncio.gather(*tasks)
 
 
 if __name__ == '__main__':
-    # loop = asyncio.get_event_loop()
-    # loop.run_until_complete(main())
-    # loop.close()
-    asyncio.run(main())
-    
-    
-# python3
-# import asyncio
-# @asyncio.corotine
-# def a():
-#    return 'ok'
-# 
-# import inspect
-# inspect.isgeneratorfunction(a)
-# g = a()
-# next(g)
-# def a():
-#	num = 1
-# 	while True:
-#		print(num)
-#		num += 1
-# a()
-
-
-# python3 original.py
-
+    t0 = time()
+    asyncio.run(main2())
+    print(time() - t0)
