@@ -1,4 +1,13 @@
+<<<<<<< HEAD
 from time import time
+=======
+# 1 Терминал python3 original.py
+# 2 Терминал nc localhost:5001
+# 3 Терминал nc localhost:5001
+
+import socket
+import selectors
+>>>>>>> 5f9497762a7c49101470cb47f95d767c64f332b6
 
 # python3 -i original.py
 # gen
