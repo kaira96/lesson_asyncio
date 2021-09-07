@@ -1,81 +1,58 @@
-
-# Dabid Beazley
-# 2015 PyCon
-# Concurrency from the Ground up Live
-
-import socket
-from select import select
-
-tasks = []
-
-to_read = {}
-to_write = {}
+# python3 -i  original.py
+# g = average()
+# g.send(None)
+# g.send(5)
+# g.send(2)
+# g.throw(StopIteration)
+# g.throw(BlaBlaException)
 
 
-def server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_socket.bind(('localhost', 5001))
-    server_socket.listen()
+# from inspect import getgeneratorstate
+# g = average()
+# getgenerationstate(g)
+# g.send(5)
+# g.send(6)
+# try:
+#	g.throw(StopIteration)
+# except StopIteration as e:
+#	print('Average', e.value)
+
+def coroutine(func):
+    def inner(*args, **kwargs):
+        g = func(*args, **kwargs)
+        g.send(None)
+        return g
+    return inner
+
+
+def subgen():
+    x = 'Ready to accept message'
+    message = yield x
+    print('Subgen received:', message)
+
+
+class BlaBlaException(Exception):
+    pass
+
+
+@coroutine
+def average():
+    count = 0
+    summ = 0
+    average = None
 
     while True:
-
-        yield ('read', server_socket)
-        client_socket, addr = server_socket.accept()  # read
-
-        print('Connection from', addr)
-
-        tasks.append(client(client_socket))
-
-
-def client(client_socket):
-    while True:
-
-        yield ('read', client_socket)
-        request = client_socket.recv(4096)  # read
-
-        if not request:
+        try:
+            x = yield average
+        except StopIteration:
+            print('Done')
+            break
+        except BlaBlaException:
+            print('................................')
             break
         else:
-            response = 'Hello world\n'.encode()
+            count += 1
+            summ += x
+            average = round(summ / count, 2)
 
-            yield ('write', client_socket)
-            client_socket.send(response)    # write
-
-    client_socket.close()
-
-
-def event_loop():
-
-    while any([tasks, to_read, to_write]):
-
-        while not tasks:
-            ready_to_read, ready_to_write, _ = select(to_read, to_write, [])
-
-            for sock in ready_to_read:
-                tasks.append(to_read.pop(sock))
-
-            for sock in ready_to_write:
-                tasks.append(to_write.pop(sock))
-
-        try:
-            task = tasks.pop(0)
-
-            reason, sock = next(task)  # ('write', client_socket)
-
-            if reason == 'read':
-                to_read[sock] = task
-            if reason == 'write':
-                to_write[sock] = task
-
-        except StopIteration:
-            print('Done!')
-
-
-
-tasks.append(server())
-event_loop()
-
-
-# python3 original.py
-# nc localhost 5001
+    return average
