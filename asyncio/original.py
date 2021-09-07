@@ -1,55 +1,28 @@
-<<<<<<< HEAD
-from time import time
-=======
-# 1 Терминал python3 original.py
-# 2 Терминал nc localhost:5001
-# 3 Терминал nc localhost:5001
-
 import socket
-import selectors
->>>>>>> 5f9497762a7c49101470cb47f95d767c64f332b6
 
-# python3 -i original.py
-# gen
-# g
-# next(g)
+# domain:5000
 
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+server_socket.bind(('localhost', 5001))
+server_socket.listen()
 
-def gen_filename():
+while True:
+    print('Before .accept()')
+    client_socket, addr = server_socket.accept()
+    print('Connection from', addr)
+
     while True:
-        pattern = 'file-{}.jpeg'
-        t = int(time() * 1000)
+        request = client_socket.recv(4096)
 
-        yield pattern.format(str(t))
+        if not request:
+            break
+        else:
+            response = 'Hello world\n'.encode()
+            client_socket.send(response)
 
-        sum = 234 + 234
-        print(sum)
-
-
-# g = gen_filename()
-
-
-def gen1(s):
-    for i in s:
-        yield i
-
-
-
-def gen2(n):
-    for i in range(n):
-        yield i
-
-g1 = gen1('oleg')
-g2 = gen2(4)
-
-tasks = [g1, g2]
-
-while tasks:
-    task = tasks.pop(0)
-
-    try:
-        i = next(task)
-        print(i)
-        tasks.append(task)
-    except StopIteration:
-        pass
+    print('Outside inner while loop')
+    client_socket.close()
+    
+# 1 terminal python3 original.py
+# 2 terminal nc localhost 5001
