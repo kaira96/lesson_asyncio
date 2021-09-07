@@ -1,3 +1,7 @@
+# 1 Терминал python3 original.py
+# 2 Терминал nc localhost:5001
+# 3 Терминал nc localhost:5001
+
 import socket
 import selectors
 
